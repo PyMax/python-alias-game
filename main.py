@@ -64,17 +64,17 @@ def room():
 @app.route('/game/<string:room_id>')
 def game(room_id):
 	room = session.get("room")
+	player_name = session.get("name")
 	if room is None or room not in rooms or room.lower() != room_id:
 		return redirect(url_for("home"))
-	return render_template("game.html", code=room)
+	return render_template("game.html", code=room, player_name=player_name)
 
 
-@app.route('/word')
 def get_word():
 	room = session.get("room")
 	if room is None or room not in rooms:
 		return redirect(url_for("home"))
-	wordlist = [word.split() for word in open('wordlist.txt') ]
+	wordlist = [word.split() for word in open('wordlist.txt')]
 	if "words" not in rooms[room].keys():
 		rooms[room]["words"] = []
 	word = generate_word(wordlist, room)
@@ -102,7 +102,6 @@ def message(data):
 	}
 	send(content, to=room)
 	rooms[room]["messages"].append(content)
-	print(f"{session.get('name')} said: {data['data']}")
 
 
 @socketio.on("connect")
@@ -118,7 +117,6 @@ def connect(auth):
 	join_room(room)
 	send({"name": name, "message": "has entered the room"}, to=room)
 	rooms[room]["members"] += 1
-	print(f"{name} joined room {room}")
 
 
 @socketio.on("disconnect")
@@ -133,21 +131,31 @@ def disconnect():
 			del rooms[room]
 
 	send({"name": name, "message": "has left the room"}, to=room)
-	print(f"{name} has left the room {room}")
 
 
 @socketio.on("startGame")
 def startGame():
+	if session.get('game_started'):
+		return
 	room = session.get("room")
-	timer = 120
-	emit('start', {"timer": timer, "start": True})
-	print("timer " + str(timer) + " send to room " + str(room))
+	timer = 30
+	session['game_started'] = True
+	emit('start', {"timer": timer, "game_started": True}, to=room)
+	emit('word', {'word': get_word()})
 
 
 @socketio.on("endGame")
 def endGame():
 	room = session.get("room")
-	emit('end', {"timer": 0, "end": True})
+	session['game_started'] = False
+	emit('end', {"timer": 0, "end": True}, to=room)
+
+
+@socketio.on('nextWord')
+def nextWord():
+	if not session.get('game_started'):
+		return
+	emit('next_word', {'word': get_word()})
 
 
 if __name__ == "__main__":
