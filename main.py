@@ -56,6 +56,25 @@ def room():
 
     return render_template("room.html", code=room, messages=rooms[room]["messages"])
 
+@app.route('/word')
+def get_word():
+	room = session.get("room")
+	if room is None or room not in rooms:
+		return redirect(url_for("home"))
+	wordlist = [word.split() for word in open('wordlist.txt') ]
+	if "words" not in rooms[room].keys():
+		rooms[room]["words"] = []
+	word = generate_word(wordlist, room)
+	return word
+
+def generate_word(wordlist, room):
+	word = random.choice(wordlist)[0]
+	if word not in rooms[room]['words']:
+		rooms[room]['words'].append(word)
+		return word
+	else:
+		generate_word(wordlist, room)
+
 @socketio.on("message")
 def message(data):
     room = session.get("room")
