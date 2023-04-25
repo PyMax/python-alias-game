@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block content %}
+<main>
+    <section id="game-section">
+            <h3>Game {{code}}</h3>
+        <div id="word-container">
+            <h2 id="word">WORD TO BE GUESSED</h2>
+            <p id="timer">00:00</p>
+            <button id="start-game" onClick="startGame()">START GAME</button>
+            <button disabled id="next-word">NEXT WORD</button>
+        </div>
+
+        <!--			<form id="guess-form">-->
+        <!--				<label for="guess-input">Enter your guess:</label>-->
+        <!--				<input type="text" id="guess-input" name="guess-input">-->
+        <!--				<button type="submit" id="submit-btn">Submit</button>-->
+        <!--			</form>-->
+        <!--			<div id="scoreboard">-->
+        <!--				<h3>Scoreboard</h3>-->
+        <!--				<table>-->
+        <!--					<thead>-->
+        <!--						<tr>-->
+        <!--							<th>Team</th>-->
+        <!--							<th>Score</th>-->
+        <!--						</tr>-->
+        <!--					</thead>-->
+        <!--					<tbody>-->
+        <!--						<tr>-->
+        <!--							<td>Team 1</td>-->
+        <!--							<td>0</td>-->
+        <!--						</tr>-->
+        <!--						<tr>-->
+        <!--							<td>Team 2</td>-->
+        <!--							<td>0</td>-->
+        <!--						</tr>-->
+        <!--						&lt;!&ndash; Add additional rows for each team &ndash;&gt;-->
+        <!--					</tbody>-->
+        <!--				</table>-->
+        <!--			</div>-->
+    </section>
+    <!-- Add any additional sections or elements here -->
+</main>
+<!-- Add any additional scripts or links here -->
+<script type="text/javascript">
+  var socketio = io();
+  var timerSeconds = 0;
+  var timerInterval;
+
+
+  socketio.on("start", (data) => {
+    console.log("OKIDOKI")
+    start_btn = document.getElementById("start-game");
+	timerSeconds = data.timer;
+	start_btn.remove()
+	// Start the timer interval
+    timerInterval = setInterval(updateTimer, 1000);
+  });
+
+  const startGame = () => {
+	socketio.emit("startGame");
+  };
+
+  const endGame = () => {
+	socketio.emit("endGame");
+  };
+
+  const nextWord = () => {
+	socketio.emit("nextWord");
+  };
+
+	// Get the timer element from the HTML
+	const timerElement = document.getElementById('timer');
+
+	// Function to update the timer
+	function updateTimer() {
+		// Decrement the number of seconds
+		timerSeconds--;
+
+        // Check if the timer has run out
+        if (timerSeconds < 0) {
+            // Stop the timer
+            clearInterval(timerInterval);
+            endGame();
+        } else {
+            // Update the timer display
+            timerElement.innerHTML = timerSeconds;
+        }
+	}
+</script>
+{% endblock %}

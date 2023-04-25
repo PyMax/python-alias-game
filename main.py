@@ -1,13 +1,15 @@
 from flask import Flask, render_template, request, session, redirect, url_for
-from flask_socketio import join_room, leave_room, send, SocketIO
+from flask_socketio import join_room, leave_room, send, SocketIO, emit
 import random
 from string import ascii_uppercase
+from uuid import uuid4
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "hjhjsdahhds"
 socketio = SocketIO(app)
 
 rooms = {}
+
 
 def generate_unique_code(length):
     while True:
@@ -19,6 +21,7 @@ def generate_unique_code(length):
             break
     
     return code
+
 
 @app.route("/", methods=["POST", "GET"])
 def home():
@@ -37,24 +40,34 @@ def home():
         
         room = code
         if create != False:
-            room = generate_unique_code(4)
+            room = generate_unique_code(6)
             rooms[room] = {"members": 0, "messages": []}
         elif code not in rooms:
             return render_template("home.html", error="Room does not exist.", code=code, name=name)
         
         session["room"] = room
         session["name"] = name
-        return redirect(url_for("room"))
+        session["uid"] = uuid4()
+        return redirect(url_for("game", room_id=room.lower()))
 
     return render_template("home.html")
+
 
 @app.route("/room")
 def room():
     room = session.get("room")
     if room is None or session.get("name") is None or room not in rooms:
         return redirect(url_for("home"))
-
     return render_template("room.html", code=room, messages=rooms[room]["messages"])
+
+
+@app.route('/game/<string:room_id>')
+def game(room_id):
+    room = session.get("room")
+    if room is None or room not in rooms or room.lower() != room_id:
+        return redirect(url_for("home"))
+    return render_template("game.html", code=room)
+
 
 @socketio.on("message")
 def message(data):
@@ -69,6 +82,7 @@ def message(data):
     send(content, to=room)
     rooms[room]["messages"].append(content)
     print(f"{session.get('name')} said: {data['data']}")
+
 
 @socketio.on("connect")
 def connect(auth):
@@ -85,6 +99,7 @@ def connect(auth):
     rooms[room]["members"] += 1
     print(f"{name} joined room {room}")
 
+
 @socketio.on("disconnect")
 def disconnect():
     room = session.get("room")
@@ -98,6 +113,21 @@ def disconnect():
     
     send({"name": name, "message": "has left the room"}, to=room)
     print(f"{name} has left the room {room}")
+
+
+@socketio.on("startGame")
+def startGame():
+    room = session.get("room")
+    timer = 120
+    emit('start', {"timer": timer, "start": True})
+    print("timer " + str(timer) + " send to room " + str(room))
+
+
+@socketio.on("endGame")
+def endGame():
+    room = session.get("room")
+    emit('end', {"timer": 0, "end": True})
+
 
 if __name__ == "__main__":
     socketio.run(app, debug=True)
