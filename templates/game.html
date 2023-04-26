@@ -7,6 +7,7 @@
 
         <div id="word-container">
             <h3 id="word">GUESS THE WORD</h3>
+            <p id="trans"></p>
             <p id="timer">00:00</p>
             <button id="start-game" onClick="startGame()">START GAME</button>
             <button id="next-word" onClick="nextWord()">NEXT WORD</button>
@@ -47,40 +48,39 @@
   var socketio = io();
   var timerSeconds = 0;
   var timerInterval;
+  start_btn = document.getElementById("start-game");
+  word_block = document.getElementById('word');
+  next_word_btn = document.getElementById("next-word");
+  trans_block = document.getElementById('trans');
 
 
   socketio.on("start", (data) => {
     console.log("response start game")
-    start_btn = document.getElementById("start-game");
-	timerSeconds = data.timer;
-	start_btn.style.visibility = 'hidden';
-	word_block = document.getElementById('word');
+	  timerSeconds = data.timer;
+	  start_btn.style.visibility = 'hidden';
     word_block.innerHTML = "GUESS THE WORD";
-	timerInterval = setInterval(updateTimer, 1000);
+	  timerInterval = setInterval(updateTimer, 1000);
   });
 
   socketio.on("end", (data) => {
      console.log('response end game')
      timerElement.innerHTML = '00:00';
-     next_word_btn = document.getElementById("next-word");
      next_word_btn.style.visibility = 'hidden';
-     start_btn = document.getElementById("start-game");
      start_btn.style.visibility = 'visible';
-     word_block = document.getElementById('word');
      word_block.innerHTML = "READY FOR NEXT ROUND";
+     trans_block.innerHTML = '';
   });
 
   socketio.on("next_word", (data) => {
     console.log('response next word')
-    word_block = document.getElementById('word');
     word_block.innerHTML = data.word;
+    trans_block.innerHTML = data.trans;
   });
 
   socketio.on("word", (data) => {
     console.log('response word')
-    next_word_btn = document.getElementById("next-word");
-    word_block = document.getElementById('word');
     word_block.innerHTML = data.word;
+    trans_block.innerHTML = data.trans;
     next_word_btn.style.visibility = 'visible';
   });
 

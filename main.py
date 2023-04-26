@@ -1,15 +1,23 @@
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, session, redirect, url_for, g
 from flask_socketio import join_room, leave_room, send, SocketIO, emit
 import random
 from string import ascii_uppercase
 from uuid import uuid4
+import sqlite3
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "hjhjsdahhds"
 socketio = SocketIO(app)
+DATABASE = 'alias.db'
 
 rooms = {}
 
+
+def get_db():
+	db = getattr(g, '_database', None)
+	if db is None:
+		db = g._database = sqlite3.connect(DATABASE)
+	return db
 
 def generate_unique_code(length):
 	while True:
@@ -74,15 +82,15 @@ def get_word():
 	room = session.get("room")
 	if room is None or room not in rooms:
 		return redirect(url_for("home"))
-	wordlist = [word.split() for word in open('wordlist.txt')]
 	if "words" not in rooms[room].keys():
 		rooms[room]["words"] = []
+	wordlist = get_db().cursor().execute('SELECT title_en, title_ru FROM words').fetchall()
 	word = generate_word(wordlist, room)
-	return word
+	return list(word)
 
 
 def generate_word(wordlist, room):
-	word = random.choice(wordlist)[0]
+	word = random.choice(wordlist)
 	if word not in rooms[room]['words']:
 		rooms[room]['words'].append(word)
 		return word
@@ -141,21 +149,23 @@ def startGame():
 	timer = 30
 	session['game_started'] = True
 	emit('start', {"timer": timer, "game_started": True}, to=room)
-	emit('word', {'word': get_word()})
+	startword = get_word()
+	emit('word', {'word': startword[0], 'trans': startword[1]})
 
 
 @socketio.on("endGame")
 def endGame():
 	room = session.get("room")
 	session['game_started'] = False
-	emit('end', {"timer": 0, "end": True}, to=room)
+	emit('end', {"timer": 0, "end": True})
 
 
 @socketio.on('nextWord')
 def nextWord():
 	if not session.get('game_started'):
 		return
-	emit('next_word', {'word': get_word()})
+	nextWord = get_word()
+	emit('next_word', {'word': nextWord[0], 'trans': nextWord[1]})
 
 
 if __name__ == "__main__":
