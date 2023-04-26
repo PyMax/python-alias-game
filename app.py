@@ -4,6 +4,7 @@ import random
 from string import ascii_uppercase
 from uuid import uuid4
 import sqlite3
+import os
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "hjhjsdahhds"
@@ -169,5 +170,5 @@ def nextWord():
 
 
 if __name__ == "__main__":
-
-	socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
+	port = int(os.environ.get('PORT', 5000))
+	socketio.run(app, debug=False, port=port, allow_unsafe_werkzeug=True)
