@@ -10,7 +10,8 @@
             <p id="trans"></p>
             <p id="timer">00:00</p>
             <button id="start-game" onClick="startGame()">START GAME</button>
-            <button id="next-word" onClick="nextWord()">NEXT WORD</button>
+            <button id="next-word" onClick="nextWord()">CORRECT!</button>
+            <button id="skip-word" onClick="skipWord()">SKIP WORD</button>
         </div>
 
         <!--			<form id="guess-form">-->
@@ -18,28 +19,19 @@
         <!--				<input type="text" id="guess-input" name="guess-input">-->
         <!--				<button type="submit" id="submit-btn">Submit</button>-->
         <!--			</form>-->
-        <!--			<div id="scoreboard">-->
-        <!--				<h3>Scoreboard</h3>-->
-        <!--				<table>-->
-        <!--					<thead>-->
-        <!--						<tr>-->
-        <!--							<th>Team</th>-->
-        <!--							<th>Score</th>-->
-        <!--						</tr>-->
-        <!--					</thead>-->
-        <!--					<tbody>-->
-        <!--						<tr>-->
-        <!--							<td>Team 1</td>-->
-        <!--							<td>0</td>-->
-        <!--						</tr>-->
-        <!--						<tr>-->
-        <!--							<td>Team 2</td>-->
-        <!--							<td>0</td>-->
-        <!--						</tr>-->
-        <!--						&lt;!&ndash; Add additional rows for each team &ndash;&gt;-->
-        <!--					</tbody>-->
-        <!--				</table>-->
-        <!--			</div>-->
+        <div id="scoreboard">
+          <h3>Scoreboard</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Player</th>
+                <th>Score</th>
+              </tr>
+            </thead>
+            <tbody id="players-score">
+            </tbody>
+          </table>
+        </div>
     </section>
     <!-- Add any additional sections or elements here -->
 </main>
@@ -52,6 +44,7 @@
   word_block = document.getElementById('word');
   next_word_btn = document.getElementById("next-word");
   trans_block = document.getElementById('trans');
+  skip_word_btn = document.getElementById('skip-word');
 
 
   socketio.on("start", (data) => {
@@ -69,6 +62,14 @@
      start_btn.style.visibility = 'visible';
      word_block.innerHTML = "READY FOR NEXT ROUND";
      trans_block.innerHTML = '';
+
+     score_table_body = document.getElementById('players-score')
+     content = '';
+     data.scores.forEach(element => {
+      content += `<tr><td>${element.name}<td>${element.score}<td></td></tr>`
+     });
+     score_table_body.innerHTML = content;
+
   });
 
   socketio.on("next_word", (data) => {
@@ -82,21 +83,27 @@
     word_block.innerHTML = data.word;
     trans_block.innerHTML = data.trans;
     next_word_btn.style.visibility = 'visible';
+    skip_word_btn.style.visibility = 'visible';
   });
 
   const startGame = () => {
     console.log('startGame')
-	socketio.emit("startGame");
+	  socketio.emit("startGame");
   };
 
   const endGame = () => {
     console.log('endGame')
-	socketio.emit("endGame");
+	  socketio.emit("endGame");
   };
 
   const nextWord = () => {
     console.log('nextWord')
-	socketio.emit("nextWord");
+	  socketio.emit("nextWord");
+  };
+
+  const skipWord = () => {
+    console.log('skipWord')
+	  socketio.emit("nextWord", {skip : true});
   };
 
 	// Get the timer element from the HTML

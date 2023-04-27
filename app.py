@@ -57,6 +57,7 @@ def home():
 		session["room"] = room
 		session["name"] = name
 		session["uid"] = uuid4()
+		session['score'] = 0
 		return redirect(url_for("game", room_id=room.lower()))
 
 	return render_template("home.html")
@@ -158,14 +159,17 @@ def startGame():
 def endGame():
 	room = session.get("room")
 	session['game_started'] = False
+	
 	emit('end', {"timer": 0, "end": True})
 
 
 @socketio.on('nextWord')
-def nextWord():
+def nextWord(data):
 	if not session.get('game_started'):
 		return
 	nextWord = get_word()
+	if 'skip' not in data.keys():
+		session['score'] +=1
 	emit('next_word', {'word': nextWord[0], 'trans': nextWord[1]})
 
 

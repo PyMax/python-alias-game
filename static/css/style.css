@@ -157,6 +157,10 @@ button:hover {
     visibility:hidden;
 }
 
+#skip-word {
+    visibility:hidden;
+}
+
 h3 {
     font-size: 1.5rem;
     margin-top: 0;
