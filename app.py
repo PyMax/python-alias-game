@@ -50,13 +50,13 @@ def home():
 		room = code
 		if create != False:
 			room = generate_unique_code(6)
-			rooms[room] = {"members": 0, "messages": []}
+			session["uid"] = uuid4()
+			rooms[room] = {"members": 0, "messages": [], 'words' : [], 'scores' : []}
 		elif code not in rooms:
 			return render_template("home.html", error="Room does not exist.", code=code, name=name)
 
 		session["room"] = room
 		session["name"] = name
-		session["uid"] = uuid4()
 		session['score'] = 0
 		return redirect(url_for("game", room_id=room.lower()))
 
@@ -84,8 +84,6 @@ def get_word():
 	room = session.get("room")
 	if room is None or room not in rooms:
 		return redirect(url_for("home"))
-	if "words" not in rooms[room].keys():
-		rooms[room]["words"] = []
 	wordlist = get_db().cursor().execute('SELECT title_en, title_ru FROM words').fetchall()
 	word = generate_word(wordlist, room)
 	return list(word)
@@ -148,8 +146,11 @@ def startGame():
 	if session.get('game_started'):
 		return
 	room = session.get("room")
+	name = session.get("name")
+	score = session.get("score")
 	timer = 30
 	session['game_started'] = True
+	rooms[room]['scores'].append({session.get('sid') : { 'name' : name, 'score' : score }})
 	emit('start', {"timer": timer, "game_started": True}, to=room)
 	startword = get_word()
 	emit('word', {'word': startword[0], 'trans': startword[1]})
@@ -158,9 +159,12 @@ def startGame():
 @socketio.on("endGame")
 def endGame():
 	room = session.get("room")
+	score = session.get("score")
 	session['game_started'] = False
-	
-	emit('end', {"timer": 0, "end": True})
+	rooms[room]['scores'][session.get('sid')].update({"score" : score})
+	session['score'] = 0
+	emit('end', {"timer": 0, 'scores': rooms[room]['scores']})
+
 
 
 @socketio.on('nextWord')
@@ -168,7 +172,7 @@ def nextWord(data):
 	if not session.get('game_started'):
 		return
 	nextWord = get_word()
-	if 'skip' not in data.keys():
+	if not data['skip']:
 		session['score'] +=1
 	emit('next_word', {'word': nextWord[0], 'trans': nextWord[1]})
 

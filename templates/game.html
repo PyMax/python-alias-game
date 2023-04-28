@@ -65,10 +65,11 @@
 
      score_table_body = document.getElementById('players-score')
      content = '';
-     data.scores.forEach(element => {
-      content += `<tr><td>${element.name}<td>${element.score}<td></td></tr>`
-     });
-     score_table_body.innerHTML = content;
+     console.log(data.scores);
+    //  data.scores.forEach(element => {
+    //   content += `<tr><td>${element.name}<td>${element.score}<td></td></tr>`
+    //  });
+    //  score_table_body.innerHTML = content;
 
   });
 
@@ -98,12 +99,12 @@
 
   const nextWord = () => {
     console.log('nextWord')
-	  socketio.emit("nextWord");
+	  socketio.emit("nextWord", {skip : 0});
   };
 
   const skipWord = () => {
     console.log('skipWord')
-	  socketio.emit("nextWord", {skip : true});
+	  socketio.emit("nextWord", {skip : 1});
   };
 
 	// Get the timer element from the HTML
