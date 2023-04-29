@@ -20,6 +20,7 @@ def get_db():
 		db = g._database = sqlite3.connect(DATABASE)
 	return db
 
+
 def generate_unique_code(length):
 	while True:
 		code = ""
@@ -28,8 +29,14 @@ def generate_unique_code(length):
 
 		if code not in rooms:
 			break
-
 	return code
+
+
+@app.teardown_appcontext
+def close_connection(exception):
+	db = getattr(g, '_database', None)
+	if db is not None:
+		db.close()
 
 
 @app.route("/", methods=["POST", "GET"])
@@ -51,7 +58,7 @@ def home():
 		if create != False:
 			room = generate_unique_code(6)
 			session["uid"] = uuid4()
-			rooms[room] = {"members": 0, "messages": [], 'words' : [], 'scores' : []}
+			rooms[room] = {"members": 0, "messages": [], 'words': []}
 		elif code not in rooms:
 			return render_template("home.html", error="Room does not exist.", code=code, name=name)
 
@@ -125,6 +132,7 @@ def connect(auth):
 	join_room(room)
 	send({"name": name, "message": "has entered the room"}, to=room)
 	rooms[room]["members"] += 1
+	session['user_id'] = rooms[room]["members"]
 
 
 @socketio.on("disconnect")
@@ -146,25 +154,53 @@ def startGame():
 	if session.get('game_started'):
 		return
 	room = session.get("room")
-	name = session.get("name")
-	score = session.get("score")
-	timer = 30
+
+	timer = 120
 	session['game_started'] = True
-	rooms[room]['scores'].append({session.get('sid') : { 'name' : name, 'score' : score }})
+	#add_user_score()
 	emit('start', {"timer": timer, "game_started": True}, to=room)
 	startword = get_word()
 	emit('word', {'word': startword[0], 'trans': startword[1]})
 
 
-@socketio.on("endGame")
-def endGame():
+def add_user_score():
+	room = session.get("room")
+	name = session.get("name")
+	score = session.get("score")
+	user_id = session.get("user_id")
+	score_exists = get_db().cursor().execute("SELECT 1 FROM scoreboard where room=? and user_id=?", [room, user_id]).fetchone()
+	if not score_exists:
+		get_db().cursor().execute("INSERT INTO scoreboard(user_id,room,player_name,score) VALUES(?, ?, ?, ?)", (user_id, room, name, score))
+		get_db().commit()
+		get_db().cursor().close()
+
+
+def update_user_score():
 	room = session.get("room")
 	score = session.get("score")
-	session['game_started'] = False
-	rooms[room]['scores'][session.get('sid')].update({"score" : score})
-	session['score'] = 0
-	emit('end', {"timer": 0, 'scores': rooms[room]['scores']})
+	user_id = session.get("user_id")
+	opponent_id = get_db().cursor().execute("SELECT user_id FROM scoreboard where room=? and user_id!=?", [room, user_id]).fetchone()
+	get_db().cursor().execute("UPDATE scoreboard SET score=? WHERE room=? AND user_id=?", (score, room, opponent_id[0]))
+	get_db().commit()
+	get_db().cursor().close()
 
+
+@socketio.on("endGame")
+def endGame():
+	session['game_started'] = False
+	#update_user_score()
+	emit('end', {"timer": 0})
+
+
+@socketio.on('getScore')
+def get_score():
+	room = session.get('room')
+	scores = []
+	scores_db = get_db().cursor().execute("SELECT user_id,player_name,score FROM scoreboard where room=?", [room]).fetchall()
+	for score in scores_db:
+		scores.append({'user_id': score[0], 'name': score[1], 'score': score[2]})
+	get_db().cursor().close()
+	emit('scoreboard', {'scores': scores})
 
 
 @socketio.on('nextWord')

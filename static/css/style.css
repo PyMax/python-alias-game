@@ -155,6 +155,7 @@ button:hover {
 
 #next-word {
     visibility:hidden;
+    padding-bottom:10px;
 }
 
 #skip-word {
@@ -164,6 +165,14 @@ button:hover {
 h3 {
     font-size: 1.5rem;
     margin-top: 0;
+}
+
+#scoreboard {
+    visibility:hidden;
+}
+
+.disabled{
+  pointer-events: none;
 }
 
 table {

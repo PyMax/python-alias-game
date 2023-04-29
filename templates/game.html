@@ -8,9 +8,10 @@
         <div id="word-container">
             <h3 id="word">GUESS THE WORD</h3>
             <p id="trans"></p>
-            <p id="timer">00:00</p>
+            <p id="timer"></p>
             <button id="start-game" onClick="startGame()">START GAME</button>
             <button id="next-word" onClick="nextWord()">CORRECT!</button>
+            <p></p>
             <button id="skip-word" onClick="skipWord()">SKIP WORD</button>
         </div>
 
@@ -45,13 +46,14 @@
   next_word_btn = document.getElementById("next-word");
   trans_block = document.getElementById('trans');
   skip_word_btn = document.getElementById('skip-word');
+  scoreboard = document.getElementById('scoreboard');
 
 
   socketio.on("start", (data) => {
-    console.log("response start game")
+      console.log("response start game")
 	  timerSeconds = data.timer;
 	  start_btn.style.visibility = 'hidden';
-    word_block.innerHTML = "GUESS THE WORD";
+      word_block.innerHTML = "GUESS THE WORD";
 	  timerInterval = setInterval(updateTimer, 1000);
   });
 
@@ -59,18 +61,23 @@
      console.log('response end game')
      timerElement.innerHTML = '00:00';
      next_word_btn.style.visibility = 'hidden';
+     skip_word_btn.style.visibility = 'hidden';
      start_btn.style.visibility = 'visible';
      word_block.innerHTML = "READY FOR NEXT ROUND";
      trans_block.innerHTML = '';
+     //getScore();
+  });
 
-     score_table_body = document.getElementById('players-score')
-     content = '';
-     console.log(data.scores);
-    //  data.scores.forEach(element => {
-    //   content += `<tr><td>${element.name}<td>${element.score}<td></td></tr>`
-    //  });
-    //  score_table_body.innerHTML = content;
-
+  socketio.on('scoreboard', (data) => {
+    score_table_body = document.getElementById('players-score')
+    content = '';
+    console.log(data.scores);
+    data.scores.forEach(player => {
+        //console.log(player)
+        content += `<tr><td>${player.name}<td>${player.score}<td></td></tr>`
+    });
+    score_table_body.innerHTML = content;
+    scoreboard.style.visibility = 'visible';
   });
 
   socketio.on("next_word", (data) => {
@@ -105,6 +112,11 @@
   const skipWord = () => {
     console.log('skipWord')
 	  socketio.emit("nextWord", {skip : 1});
+  };
+
+  const getScore = () => {
+    console.log('getScore')
+    socketio.emit('getScore')
   };
 
 	// Get the timer element from the HTML
