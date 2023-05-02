@@ -2,8 +2,12 @@
 {% block content %}
 <main>
     <section id="game-section">
-            <h3>Game {{code}}</h3>
-            <h3>Player {{player_name}}</h3>
+            <!-- <h3>Game {{code}}</h3> -->
+            <!-- Trigger -->
+            <button id="room-code" data-clipboard-text="{{code}}">
+              Copy room code
+            </button>
+            <h3>Your name: {{player_name}}</h3>
 
         <div id="word-container">
             <h3 id="word">GUESS THE WORD</h3>
@@ -65,7 +69,7 @@
      start_btn.style.visibility = 'visible';
      word_block.innerHTML = "READY FOR NEXT ROUND";
      trans_block.innerHTML = '';
-     //getScore();
+     getScore();
   });
 
   socketio.on('scoreboard', (data) => {
@@ -94,6 +98,13 @@
     skip_word_btn.style.visibility = 'visible';
   });
 
+  socketio.on("message", (data) => {
+    alertify.success(data.name + ' ' + data.message);
+    if(data.members && data.members >=2){
+      start_btn.style.visibility = 'visible';
+    }
+  });
+
   const startGame = () => {
     console.log('startGame')
 	  socketio.emit("startGame");
@@ -119,6 +130,12 @@
     socketio.emit('getScore')
   };
 
+  var clipboard = new ClipboardJS('#room-code');
+
+  clipboard.on('success', function(e) {
+    //alertify.set('notifier','position', 'top-right');
+    alertify.success('Copied');
+  });
 	// Get the timer element from the HTML
 	const timerElement = document.getElementById('timer');
 
