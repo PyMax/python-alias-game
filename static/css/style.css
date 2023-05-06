@@ -162,6 +162,10 @@ button:hover {
     visibility:hidden;
 }
 
+#start-game {
+    visibility:hidden;
+}
+
 h3 {
     font-size: 1.5rem;
     margin-top: 0;
