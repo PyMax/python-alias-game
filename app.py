@@ -134,7 +134,6 @@ def connect(auth):
 	send({"name": name, "message": "has entered the room", "members" : rooms[room]["members"]}, to=room)
 	session['user_id'] = rooms[room]["members"]
 	set_user_score_record()
-	print(f"{name} has joined the room {room}")
 
 
 @socketio.on("disconnect")
@@ -156,7 +155,7 @@ def startGame():
 	if session.get('game_started'):
 		return
 	room = session.get("room")
-	timer = 10
+	timer = 120
 	session['game_started'] = True
 	emit('start', {"timer": timer, "game_started": True}, to=room)
 	startword = get_word()
@@ -169,9 +168,7 @@ def set_user_score_record():
 	score = session.get("score")
 	user_id = session.get("user_id")
 	score_exists = get_db().cursor().execute("SELECT 1 FROM scoreboard where room=? and user_id=?", [room, user_id]).fetchone()
-	print(score_exists)
 	if not score_exists:
-		print("INSERT")
 		get_db().cursor().execute("INSERT INTO scoreboard(user_id,room,player_name,score) VALUES(?, ?, ?, ?)", (user_id, room, name, score))
 		get_db().commit()
 		get_db().cursor().close()
