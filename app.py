@@ -141,13 +141,13 @@ def disconnect():
 	room = session.get("room")
 	name = session.get("name")
 	leave_room(room)
-
 	if room in rooms:
 		rooms[room]["members"] -= 1
+		members = rooms[room]["members"]
 		if rooms[room]["members"] <= 0:
 			del rooms[room]
-
-	send({"name": name, "message": "has left the room", "members" : rooms[room]["members"]}, to=room)
+			members = 0
+	send({"name": name, "message": "has left the room", "members" : members}, to=room)
 
 
 @socketio.on("startGame")
@@ -214,5 +214,5 @@ def nextWord(data):
 
 
 if __name__ == "__main__":
-	port = int(os.environ.get('PORT', 5000))
-	socketio.run(app, debug=False, host='0.0.0.0', port=port, allow_unsafe_werkzeug=True)
+	#port = int(os.environ.get('PORT', 5000))
+	socketio.run(app, debug=False, host='0.0.0.0') #, port=port, allow_unsafe_werkzeug=True)
