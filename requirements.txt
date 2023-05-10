@@ -3,3 +3,4 @@ flask_socketio
 simple_websocket
 gunicorn
 gevent
+gevent-websocket
