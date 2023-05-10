@@ -140,6 +140,7 @@ def connect(auth):
 def disconnect():
 	room = session.get("room")
 	name = session.get("name")
+	members = 0
 	leave_room(room)
 	if room in rooms:
 		rooms[room]["members"] -= 1
@@ -215,4 +216,4 @@ def nextWord(data):
 
 if __name__ == "__main__":
 	#port = int(os.environ.get('PORT', 5000))
-	socketio.run(app, debug=False, host='0.0.0.0') #, port=port, allow_unsafe_werkzeug=True)
+	socketio.run(app, debug=True, host='0.0.0.0') #, port=port, allow_unsafe_werkzeug=True)
