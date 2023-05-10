@@ -42,7 +42,7 @@
 </main>
 <!-- Add any additional scripts or links here -->
 <script type="text/javascript">
-  var socketio = io.connect(':5000');
+  var socketio = io();
   var timerSeconds = 0;
   var timerInterval;
   start_btn = document.getElementById("start-game");
