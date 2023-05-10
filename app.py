@@ -8,7 +8,7 @@ import os
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "hjhjsdahhds"
-socketio = SocketIO(app, cors_allowed_origins=['*'])
+socketio = SocketIO(app, cors_allowed_origins=['https://alias-qtcreator777.b4a.run'])
 DATABASE = 'alias.db'
 
 rooms = {}
