@@ -4,3 +4,4 @@ simple_websocket
 gunicorn
 gevent
 gevent-websocket
+Flask-Caching

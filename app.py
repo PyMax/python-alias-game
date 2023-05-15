@@ -2,13 +2,13 @@ from flask import Flask, render_template, request, session, redirect, url_for, g
 from flask_socketio import join_room, leave_room, send, SocketIO, emit
 import random
 from string import ascii_uppercase
-from uuid import uuid4
 import sqlite3
-import os
+from flask_caching import Cache
 
 app = Flask(__name__)
 app.config["SECRET_KEY"] = "hjhjsdahhds"
-socketio = SocketIO(app, cors_allowed_origins=['https://alias-qtcreator777.b4a.run'])
+socketio = SocketIO(app, cors_allowed_origins=['https://alias-qtcreator777.b4a.run','http://localhost:5000'])
+cache = Cache(app, config={'CACHE_TYPE': "SimpleCache", "CACHE_DEFAULT_TIMEOUT": 300})
 DATABASE = 'alias.db'
 
 rooms = {}
@@ -57,8 +57,7 @@ def home():
 		room = code
 		if create != False:
 			room = generate_unique_code(8)
-			session["uid"] = uuid4()
-			rooms[room] = {"members": 0, "messages": [], 'words': []}
+			rooms[room] = {"members": 0, "messages": [], 'words': set()}
 		elif code not in rooms:
 			return render_template("home.html", error="Room does not exist.", code=code, name=name)
 
@@ -91,18 +90,20 @@ def get_word():
 	room = session.get("room")
 	if room is None or room not in rooms:
 		return redirect(url_for("home"))
-	wordlist = get_db().cursor().execute('SELECT title_en, title_ru FROM words').fetchall()
+	wordlist = get_wordlist_db()
 	word = generate_word(wordlist, room)
 	return list(word)
 
+@cache.cached()
+def get_wordlist_db():
+	return get_db().cursor().execute('SELECT title_en, title_ru FROM words').fetchall()
 
 def generate_word(wordlist, room):
 	word = random.choice(wordlist)
-	if word and word not in rooms[room]['words']:
-		rooms[room]['words'].append(word)
+	if word and (word not in rooms[room]['words']):
+		rooms[room]['words'].add(word)
 		return word
-	else:
-		generate_word(wordlist, room)
+	generate_word(wordlist, room)
 
 
 @socketio.on("message")
