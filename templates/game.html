@@ -54,7 +54,7 @@
 
 
   socketio.on("start", (data) => {
-      console.log("response start game")
+      //console.log("response start game")
 	  timerSeconds = data.timer;
 	  start_btn.style.visibility = 'hidden';
       word_block.innerHTML = "GUESS THE WORD";
@@ -62,7 +62,7 @@
   });
 
   socketio.on("end", (data) => {
-     console.log('response end game')
+     //console.log('response end game')
      timerElement.innerHTML = '00:00';
      next_word_btn.style.visibility = 'hidden';
      skip_word_btn.style.visibility = 'hidden';
@@ -75,9 +75,7 @@
   socketio.on('scoreboard', (data) => {
     score_table_body = document.getElementById('players-score')
     content = '';
-    console.log(data.scores);
     data.scores.forEach(player => {
-        //console.log(player)
         content += `<tr><td>${player.name}<td>${player.score}<td></td></tr>`
     });
     score_table_body.innerHTML = content;
@@ -85,13 +83,23 @@
   });
 
   socketio.on("next_word", (data) => {
-    console.log('response next word')
+    //console.log('response next word')
     word_block.innerHTML = data.word;
     trans_block.innerHTML = data.trans;
   });
 
+  socketio.on("current_word", (data) => {
+    //console.log('response current word')
+    word_block.innerHTML = data.word;
+    trans_block.innerHTML = data.trans;
+    setTimeout(function(){ 
+      word_block.innerHTML = '';
+      trans_block.innerHTML = '';
+    }, 2000);
+  });
+
   socketio.on("word", (data) => {
-    console.log('response word')
+    //console.log('response word')
     word_block.innerHTML = data.word;
     trans_block.innerHTML = data.trans;
     next_word_btn.style.visibility = 'visible';
@@ -106,27 +114,27 @@
   });
 
   const startGame = () => {
-    console.log('startGame')
+    //console.log('startGame')
 	  socketio.emit("startGame");
   };
 
   const endGame = () => {
-    console.log('endGame')
+    //console.log('endGame')
 	  socketio.emit("endGame");
   };
 
   const nextWord = () => {
-    console.log('nextWord')
+    //console.log('nextWord')
 	  socketio.emit("nextWord", {skip : 0});
   };
 
   const skipWord = () => {
-    console.log('skipWord')
+    //console.log('skipWord')
 	  socketio.emit("nextWord", {skip : 1});
   };
 
   const getScore = () => {
-    console.log('getScore')
+    //console.log('getScore')
     socketio.emit('getScore')
   };
 

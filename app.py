@@ -57,7 +57,7 @@ def home():
 		room = code
 		if create != False:
 			room = generate_unique_code(8)
-			rooms[room] = {"members": 0, "messages": [], 'words': set()}
+			rooms[room] = {"members": 0, "messages": [], 'words': set(), 'current_word': ''}
 		elif code not in rooms:
 			return render_template("home.html", error="Room does not exist.", code=code, name=name)
 
@@ -147,6 +147,7 @@ def disconnect():
 		rooms[room]["members"] -= 1
 		members = rooms[room]["members"]
 		if rooms[room]["members"] <= 0:
+			delete_room_scoreboard(room)
 			del rooms[room]
 			members = 0
 	send({"name": name, "message": "has left the room", "members" : members}, to=room)
@@ -161,6 +162,7 @@ def startGame():
 	session['game_started'] = True
 	emit('start', {"timer": timer, "game_started": True}, to=room)
 	startword = get_word()
+	rooms[room]['current_word'] = startword
 	emit('word', {'word': startword[0], 'trans': startword[1]})
 
 
@@ -169,23 +171,29 @@ def set_user_score_record():
 	name = session.get("name")
 	score = session.get("score")
 	user_id = session.get("user_id")
+	sid = request.sid
 	score_exists = get_db().cursor().execute("SELECT 1 FROM scoreboard where room=? and user_id=?", [room, user_id]).fetchone()
 	if not score_exists:
-		get_db().cursor().execute("INSERT INTO scoreboard(user_id,room,player_name,score) VALUES(?, ?, ?, ?)", (user_id, room, name, score))
+		get_db().cursor().execute("INSERT INTO scoreboard(user_id,room,player_name,score,sid) VALUES(?, ?, ?, ?, ?)", (user_id, room, name, score, sid))
 		get_db().commit()
 		get_db().cursor().close()
 
 
+def delete_room_scoreboard(room):
+	get_db().cursor().execute("DELETE FROM scoreboard where room=?", [room])
+
 def update_user_score():
 	room = session.get("room")
 	score = session.get("score")
-	user_id = session.get("user_id")
-	opponent_id = get_db().cursor().execute("SELECT user_id FROM scoreboard where room=? and user_id!=?", [room, user_id]).fetchone()
+	opponent_id = get_opponent_id(room)
 	if(opponent_id):
 		get_db().cursor().execute("UPDATE scoreboard SET score=? WHERE room=? AND user_id=?", (score, room, opponent_id[0]))
 		get_db().commit()
 		get_db().cursor().close()
 
+def get_opponent_id(room):
+	user_id = session.get("user_id")
+	return get_db().cursor().execute("SELECT user_id, sid FROM scoreboard where room=? and user_id!=?", [room, user_id]).fetchone()
 
 @socketio.on("endGame")
 def endGame():
@@ -207,11 +215,16 @@ def get_score():
 
 @socketio.on('nextWord')
 def nextWord(data):
+	room = session.get("room")
 	if not session.get('game_started'):
 		return
-	nextWord = get_word()
 	if not data['skip']:
 		session['score'] +=1
+	opponent_id = get_opponent_id(room)
+	current_word = rooms[room]['current_word']
+	emit('current_word', {'word': current_word[0], 'trans': current_word[1]}, to=opponent_id[1])
+	nextWord = get_word()
+	rooms[room]['current_word'] = nextWord
 	emit('next_word', {'word': nextWord[0], 'trans': nextWord[1]})
 
 
